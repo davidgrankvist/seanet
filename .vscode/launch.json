@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Compiler",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug/snc.exe", 
+            "args": [
+                "--input-file", "${workspaceFolder}/samples/stuff/stuff.sn",
+                "--output-file", "${workspaceFolder}/bin/output/stuff.dll",
+                "--library",
+            ],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "preLaunchTask": "dotnet: build",
+        },
+    ]
+}
