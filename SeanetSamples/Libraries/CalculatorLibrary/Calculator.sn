@@ -2,3 +2,57 @@ int Add(int x, int y)
 {
     return x + y;
 }
+
+// short comment
+void TestLiterals()
+{
+    var x = 1337;
+    var s = "a string";
+
+    int y = 0x1337;
+    int yu = 0x1337u;
+    float f = 0.005f;
+
+    double d = 0.123;
+    var l = 532L;
+
+    var e = 1e43;
+
+    var ne = 1e-10;
+
+    var u = 431u;
+    var ul = 431ul;
+
+    var nef = 9e-4f;
+    var pef = 9e+4f;
+
+    var hl = 0x1338l;
+    var hul = 0x1338ul;
+}
+
+/* 
+long comment
+with stuff
+x = 5
+*/
+void TestControlFlow()
+{
+    var sum = 0;
+    for(var i = 0; i < 10; i++)
+    {
+        sum += i;
+        if (sum > 5)
+        {
+            break;
+        }
+    }
+
+    int x = 2;
+    while (x++ < 10)
+    {
+        if (x > 5)
+        {
+            continue;
+        }
+    }
+}

@@ -33,7 +33,7 @@ public class CodeGenerator
         il.Emit(OpCodes.Ldc_I4_0);
         il.Emit(OpCodes.Ldelem_Ref);
         // print args[0]
-        il.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", [typeof(string)]));
+        il.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", [typeof(string)])!);
         // return 0
         il.Emit(OpCodes.Ldc_I4_0);
         il.Emit(OpCodes.Ret);
