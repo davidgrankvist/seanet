@@ -44,16 +44,16 @@ class Program
         var entryPoint = entryPointClass.GetMethod("Main")!;
         ParameterInfo[] parameters = entryPoint.GetParameters() ?? [];
 
-        if (entryPoint.ReturnType == typeof(int) && parameters.Length == 0)
+        if (entryPoint.ReturnType == typeof(int) && parameters.Length > 0)
         {
-            var result = entryPoint.Invoke(null, []);
+            var result = entryPoint.Invoke(null, [args]);
 #pragma warning disable CS8605 // Unboxing a possibly null value.
             return (int)result;
 #pragma warning restore CS8605 // Unboxing a possibly null value.
         }
         else
         {
-            Console.Error.WriteLine($"Failed to run {programAssemblyName}. Only the main signature int Main() is supported right now. Sorry.");
+            Console.Error.WriteLine($"Failed to run {programAssemblyName}. Main must have the signature int Main(string[] args).");
             return 1;
         }
     }

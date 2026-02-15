@@ -23,12 +23,18 @@ public class CodeGenerator
             "Main",
             MethodAttributes.Public | MethodAttributes.Static,
             typeof(int),
-            [] //[typeof(string[])]
+            [typeof(string[])]
         );
 
         var il = methodBuilder.GetILGenerator();
 
-        //il.Emit(OpCodes.Ldarg_0);
+        // retrieve args[0]
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ldelem_Ref);
+        // print args[0]
+        il.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", [typeof(string)]));
+        // return 0
         il.Emit(OpCodes.Ldc_I4_0);
         il.Emit(OpCodes.Ret);
 
@@ -47,8 +53,9 @@ public class CodeGenerator
         var dllName = assemblyName + ".dll";
         var dllOutputPath = Path.Combine(outputDir, dllName);
         assemblyBuilder.Save(dllOutputPath);
-
         SetupShim(outputPath, dllName);
+
+        // VerifyApplicationOutput(dllOutputPath);
     }
 
     private static void SetupShim(string outputPath, string dllName)
@@ -109,22 +116,40 @@ public class CodeGenerator
         }
 
         assemblyBuilder.Save(outputPath);
+
+        // VerifyLibraryOutput(outputPath);
     }
 
-    // private static void VerifyOutput(string outputPath)
-    // {
-    //     var asm = Assembly.LoadFile(outputPath);
-    //     foreach (var t in asm.GetTypes())
-    //     {
-    //         Console.WriteLine(t.FullName);
-    //     }
+    private static void VerifyApplicationOutput(string outputPath)
+    {
+        var asm = Assembly.LoadFile(outputPath);
+        foreach (var t in asm.GetTypes())
+        {
+            Console.WriteLine(t.FullName);
+        }
 
-    //     var classInfo = asm.GetType("HelloWorld.Hello");
-    //     var mainMethodInfo = classInfo?.GetMethod("Main");
-    //     if (mainMethodInfo != null)
-    //     {
-    //         var result = mainMethodInfo.Invoke(null, []);//[new string[] {"some-args"}]);
-    //         Console.WriteLine("The result is " + result);
-    //     }
-    // }
+        var classInfo = asm.GetTypes().FirstOrDefault(x => x.IsClass && !x.IsAbstract && x.GetMethod("Main") != null);
+        if (classInfo != null)
+        {
+            var mainMethodInfo = classInfo.GetMethod("Main")!;
+            var result = mainMethodInfo.Invoke(null, [new string[] { "Hello from seanet!" }]);
+        }
+    }
+
+    private static void VerifyLibraryOutput(string outputPath)
+    {
+        var asm = Assembly.LoadFile(outputPath);
+        foreach (var t in asm.GetTypes())
+        {
+            Console.WriteLine(t.FullName);
+        }
+
+        var classInfo = asm.GetTypes().FirstOrDefault(x => x.IsClass && !x.IsAbstract && x.GetMethod("Add") != null);
+        if (classInfo != null)
+        {
+            var methodInfo = classInfo.GetMethod("Add")!;
+            var result = methodInfo.Invoke(null, [1, 2]);
+            Console.WriteLine("The result is " + result);
+        }
+    }
 }
