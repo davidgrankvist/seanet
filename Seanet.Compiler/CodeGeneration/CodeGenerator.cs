@@ -122,7 +122,8 @@ public class CodeGenerator
 
     private static void VerifyApplicationOutput(string outputPath)
     {
-        var asm = Assembly.LoadFile(outputPath);
+        var absolutePath = Path.GetFullPath(outputPath);
+        var asm = Assembly.LoadFile(absolutePath);
         foreach (var t in asm.GetTypes())
         {
             Console.WriteLine(t.FullName);
@@ -138,7 +139,8 @@ public class CodeGenerator
 
     private static void VerifyLibraryOutput(string outputPath)
     {
-        var asm = Assembly.LoadFile(outputPath);
+        var absolutePath = Path.GetFullPath(outputPath);
+        var asm = Assembly.LoadFile(absolutePath);
         foreach (var t in asm.GetTypes())
         {
             Console.WriteLine(t.FullName);
