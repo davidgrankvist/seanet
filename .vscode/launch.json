@@ -1,14 +1,31 @@
 {
     "configurations": [
         {
-            "name": "Compiler",
+            "name": "Compiler - Library",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/Debug/snc.exe", 
+            "program": "${workspaceFolder}/bin/Debug/snc.exe",
             "args": [
-                "--input-file", "${workspaceFolder}/samples/stuff/stuff.sn",
-                "--output-file", "${workspaceFolder}/bin/output/stuff.dll",
+                "--input-file",
+                "${workspaceFolder}/SeanetSamples/Libraries/CalculatorLibrary/Calculator.sn",
+                "--output-file",
+                "${workspaceFolder}/bin/output/CalculatorLibrary/CalculatorLibrary.dll",
                 "--library",
+            ],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "preLaunchTask": "dotnet: build",
+        },
+        {
+            "name": "Compiler - Executable",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug/snc.exe",
+            "args": [
+                "--input-file",
+                "${workspaceFolder}/samples/Applications/HelloWorld/Hello.sn",
+                "--output-file",
+                "${workspaceFolder}/bin/output/HelloWorld/HelloWorld.exe",
             ],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
