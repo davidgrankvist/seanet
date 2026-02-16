@@ -1,0 +1,65 @@
+using Seanet.Compiler.Scanning;
+
+namespace Seanet.Compiler.Parsing;
+
+/// <summary>
+/// A piece of syntax that can be evaluated.
+/// </summary>
+public abstract class Expression
+{
+}
+
+public class LiteralExpression : Expression
+{
+    public required Token Literal { get; init; }
+}
+
+public class GroupExpression : Expression
+{
+    public required Expression Expression { get; init; }
+}
+
+public class UnaryExpression : Expression
+{
+    public required Token Operator { get; init; }
+    public required Expression Expression { get; init; }
+}
+
+public class BinaryExpression : Expression
+{
+    public required Token Operator { get; init; }
+    public required Expression First { get; init; }
+    public required Expression Second { get; init; }
+}
+
+public class AssignmentExpression : Expression
+{
+    public required Token Identifier { get; init; }
+    public required Expression Expression { get; init; }
+}
+
+public class LogicalExpression : Expression
+{
+    public required Token Operator { get; init; }
+    public required Expression First { get; init; }
+    public required Expression Second { get; init; }
+}
+
+public class CallExpression : Expression
+{
+    public required Expression Callee { get; init; }
+    public required List<Expression> Parameters { get; init; }
+}
+
+public class PropertyAccessExpression : Expression
+{
+    public required Expression Object { get; init; }
+    public required Token Property { get; init; }
+}
+
+public class PropertyAssignmentExpression : Expression
+{
+    public required Expression Object { get; init; }
+    public required Token Property { get; init; }
+    public required Expression Value { get; init; }
+}

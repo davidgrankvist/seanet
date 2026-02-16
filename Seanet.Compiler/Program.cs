@@ -1,5 +1,6 @@
 ﻿using Seanet.Compiler.CodeGeneration;
 using Seanet.Compiler.Errors;
+using Seanet.Compiler.Parsing;
 using Seanet.Compiler.Scanning;
 
 namespace Seanet.Compiler;
@@ -58,7 +59,13 @@ class Program
             return;
         }
 
-        // Parsing (nothing for now)
+        // Parsing
+        var parser = new Parser(errorReporter);
+        var syntaxTree = parser.Parse(tokens);
+        if (errorReporter.HasErrors())
+        {
+            return;
+        }
 
         // Code generation (dummy implementation for now)
         var assemblyName = Path.GetFileNameWithoutExtension(cliResult.OutputFilePath);
