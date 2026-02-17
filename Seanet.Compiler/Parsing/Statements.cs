@@ -28,13 +28,19 @@ public class DeclarationStatement : Statement
 {
     public required Token Type { get; init; }
     public required Token Identifier { get; init; }
+}
+
+public class DeclarationWithAssignmentStatement : DeclarationStatement
+{
     public required Expression Value { get; init; }
 }
 
 public class IfStatement : Statement
 {
     public required Expression Condition { get; init; }
-    public required BlockStatement Body { get; init; }
+    public required BlockStatement IfBody { get; init; }
+    public List<IfStatement> ElseIfStatements { get; init; } = [];
+    public BlockStatement? ElseBody { get; init; } = null;
 }
 
 public class WhileStatement : Statement
@@ -49,4 +55,9 @@ public class FunctionDeclarationStatement : Statement
     public required Token Identifier { get; init; }
     public required List<DeclarationStatement> Parameters { get; init; }
     public required BlockStatement Body { get; init; }
+}
+
+public class ReturnStatement : Statement
+{
+    public required Expression Value;
 }

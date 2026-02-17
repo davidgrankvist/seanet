@@ -14,6 +14,8 @@ public enum TokenType
     DoubleLiteral,
     // Control flow
     If,
+    Else,
+    ElseIf,
     Return,
     For,
     While,
