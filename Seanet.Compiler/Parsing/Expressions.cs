@@ -48,7 +48,7 @@ public class LogicalExpression : Expression
 public class CallExpression : Expression
 {
     public required Expression Callee { get; init; }
-    public required List<Expression> Parameters { get; init; }
+    public required List<Expression> Arguments { get; init; }
 }
 
 public class PropertyAccessExpression : Expression
@@ -62,4 +62,9 @@ public class PropertyAssignmentExpression : Expression
     public required Expression Object { get; init; }
     public required Token Property { get; init; }
     public required Expression Value { get; init; }
+}
+
+public class VariableExpression : Expression
+{
+    public required Token Identifier { get; init; }
 }

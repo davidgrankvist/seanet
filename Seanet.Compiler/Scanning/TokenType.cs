@@ -5,6 +5,7 @@ public enum TokenType
     // Literals
     True,
     False,
+    Null,
     StringLiteral,
     IntLiteral,
     UIntLiteral,

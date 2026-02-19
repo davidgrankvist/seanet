@@ -1,3 +1,4 @@
+using System.Security;
 using Seanet.Compiler.Errors;
 using Seanet.Compiler.Scanning;
 
@@ -80,6 +81,36 @@ public class Parser
         return false;
     }
 
+    private bool MatchAny(params TokenType[] tokenTypes)
+    {
+        for (int i = 0; i < tokenTypes.Length; i++)
+        {
+            var tokenType = tokenTypes[i];
+            if (Check(tokenType))
+            {
+                Advance();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool MatchLiteral()
+    {
+        return MatchAny(
+            TokenType.Null,
+            TokenType.True,
+            TokenType.False,
+            TokenType.StringLiteral,
+            TokenType.IntLiteral,
+            TokenType.UIntLiteral,
+            TokenType.LongLiteral,
+            TokenType.ULongLiteral,
+            TokenType.FloatLiteral,
+            TokenType.DoubleLiteral
+        );
+    }
+
     private Token Consume(TokenType tokenType, string errorMessage)
     {
         if (Check(tokenType))
@@ -94,15 +125,15 @@ public class Parser
     {
     }
 
-    private void ReportError(string message)
+    private void ReportError(string message, Token token)
     {
-        var token = Peek();
         errorReporter.ReportParseError(file, token.Line, token.Column, message);
     }
 
-    private ParsingAbortedException ReportErrorAndAbort(string message)
+    private ParsingAbortedException ReportErrorAndAbort(string message, Token? token = null)
     {
-        ReportError(message);
+        var tokenArg = token.HasValue ? token.Value : Peek();
+        ReportError(message, tokenArg);
         return new ParsingAbortedException();
     }
 
@@ -128,7 +159,7 @@ public class Parser
 
         if (Peek().TokenType != TokenType.Eof)
         {
-            ReportError("The parsing ended before the end of the file was reached.");
+            throw ReportErrorAndAbort("The parsing ended before the end of the file was reached.");
         }
 
         return statements;
@@ -231,7 +262,7 @@ public class Parser
         return ParseExpressionStatement();
     }
 
-    private Statement ParseVarDeclaration()
+    private DeclarationWithAssignmentStatement ParseVarDeclaration()
     {
         var varToken = Previous();
         var identifier = Consume(TokenType.Identifier, "Expected a variable name in declaration.");
@@ -400,7 +431,7 @@ public class Parser
      *      }       
      * }
      */
-    private BlockStatement DesugarForStatementToWhile(
+    private static BlockStatement DesugarForStatementToWhile(
         Statement? initializer,
         Expression? condition,
         Expression? increment,
@@ -450,7 +481,7 @@ public class Parser
             Statements = innerStatements,
         };
 
-        var whileStatement =  new WhileStatement
+        var whileStatement = new WhileStatement
         {
             Condition = whileCondition,
             Body = innerBlock,
@@ -476,6 +507,245 @@ public class Parser
 
     private Expression ParseExpression()
     {
-        throw new NotImplementedException();
+        return ParseAssignment();
+    }
+
+    private Expression ParseAssignment()
+    {
+        var expression = ParseLogicalOr();
+
+        if (Match(TokenType.Equal))
+        {
+            // Use the equals token for error reporting that points to where the assignment occurred.
+            var equalsToken = Previous();
+            var valueExpression = ParseAssignment();
+
+            return expression switch
+            {
+                VariableExpression varExp => new AssignmentExpression()
+                {
+                    Identifier = varExp.Identifier,
+                    Expression = valueExpression,
+                },
+                PropertyAccessExpression propAccessExp => new PropertyAssignmentExpression()
+                {
+                    Object = propAccessExp.Object,
+                    Property = propAccessExp.Property,
+                    Value = valueExpression,
+                },
+                _ => throw ReportErrorAndAbort("Invalid assignment. The left hand side of the assignment must be a variable or an object property. ", equalsToken),
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseLogicalOr()
+    {
+        var expression = ParseLogicalAnd();
+
+        while (Match(TokenType.LogicalOr))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseLogicalAnd();
+            expression = new LogicalExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseLogicalAnd()
+    {
+        var expression = ParseEquality();
+
+        while (Match(TokenType.LogicalAnd))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseEquality();
+            expression = new LogicalExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseEquality()
+    {
+        var expression = ParseComparison();
+
+        while (MatchAny(TokenType.EqualEqual, TokenType.NotEqual))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseComparison();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseComparison()
+    {
+        var expression = ParseTerm();
+
+        while (MatchAny(TokenType.Greater, TokenType.GreaterEqual, TokenType.Less, TokenType.LessEqual))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseTerm();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseTerm()
+    {
+        var expression = ParseFactor();
+
+        while (MatchAny(TokenType.Plus, TokenType.Minus))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseFactor();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseFactor()
+    {
+        var expression = ParseUnary();
+
+        while (MatchAny(TokenType.Star, TokenType.Slash))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseUnary();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseUnary()
+    {
+        if (MatchAny(TokenType.LogicalNot, TokenType.Minus))
+        {
+            var operatorToken = Previous();
+            var expression = ParseUnary();
+            return new UnaryExpression()
+            {
+                Operator = operatorToken,
+                Expression = expression,
+            };
+        }
+
+        return ParseCall();
+    }
+
+    private Expression ParseCall()
+    {
+        var expression = ParsePrimary();
+
+        while (true)
+        {
+            if (Match(TokenType.ParenStart))
+            {
+                expression = ParseCallExpression(expression);
+            }
+            else if (Match(TokenType.Dot))
+            {
+                var identifierToken = Consume(TokenType.Identifier, "Expected an identifier after property accessor.");
+                return new PropertyAccessExpression
+                {
+                    Object = expression,
+                    Property = identifierToken,
+                };
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return expression;
+    }
+
+    private Expression ParseCallExpression(Expression callee)
+    {
+        if (Check(TokenType.ParenEnd))
+        {
+            return callee;
+        }
+
+        var arguments = new List<Expression>();
+        do
+        {
+            arguments.Add(ParseExpression());
+        } while (Match(TokenType.Comma));
+
+        return new CallExpression()
+        {
+            Callee = callee,
+            Arguments = arguments,
+        };
+    }
+
+    private Expression ParsePrimary()
+    {
+        if (MatchLiteral())
+        {
+            return new LiteralExpression()
+            {
+                Literal = Previous(),
+            };
+        }
+
+        if (Match(TokenType.ParenStart))
+        {
+            var expression = ParseExpression();
+            Consume(TokenType.ParenEnd, "Expected ) at the end of parenthesis group.");
+            return new GroupExpression()
+            {
+                Expression = expression,
+            };
+        }
+
+        if (Match(TokenType.Identifier))
+        {
+            return new VariableExpression()
+            {
+                Identifier = Previous(),
+            };
+        }
+
+        throw ReportErrorAndAbort("Unexpected expression. Expected a literal, parenthesis grouping or identifier.");
     }
 }

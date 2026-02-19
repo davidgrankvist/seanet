@@ -61,7 +61,7 @@ class Program
 
         // Parsing
         var parser = new Parser(errorReporter);
-        var syntaxTree = parser.Parse(tokens);
+        var syntaxTree = parser.Parse(cliResult.InputFilePath, tokens);
         if (errorReporter.HasErrors())
         {
             return;
