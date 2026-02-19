@@ -50,6 +50,12 @@ public class Parser
     }
 
 
+    private Token PeekNext()
+    {
+        return tokens[current + 1];
+    }
+
+
     private Token Previous()
     {
         return tokens[current - 1];
@@ -69,6 +75,11 @@ public class Parser
     private bool Check(TokenType tokenType)
     {
         return !IsDone() && Peek().TokenType == tokenType;
+    }
+
+    private bool CheckNext(TokenType tokenType)
+    {
+        return !IsDone() && current + 1 < tokens.Count && PeekNext().TokenType == tokenType;
     }
 
     private bool Match(TokenType tokenType)
@@ -111,6 +122,41 @@ public class Parser
         );
     }
 
+    private bool MatchVariableType()
+    {
+        return MatchAny(
+            TokenType.Byte,
+            TokenType.Short,
+            TokenType.UShort,
+            TokenType.Int,
+            TokenType.UInt,
+            TokenType.Long,
+            TokenType.ULong,
+            TokenType.Float,
+            TokenType.Double);
+    }
+
+    private bool MatchVariableTypeIdentifier()
+    {
+        if (Check(TokenType.Identifier) && CheckNext(TokenType.Identifier))
+        {
+            Advance();
+            return true;
+        }
+        return false;
+    }
+
+    private bool MatchElseIf()
+    {
+        if (Check(TokenType.Else) && CheckNext(TokenType.If))
+        {
+            Advance();
+            Advance();
+            return true;
+        }
+        return false;
+    }
+
     private Token Consume(TokenType tokenType, string errorMessage)
     {
         if (Check(tokenType))
@@ -120,6 +166,38 @@ public class Parser
 
         throw ReportErrorAndAbort(errorMessage);
     }
+
+    private Token ConsumeAny(TokenType[] tokenTypes, string errorMessage)
+    {
+        for (var i = 0; i < tokenTypes.Length; i++)
+        {
+            var tokenType = tokenTypes[i];
+            if (Check(tokenType))
+            {
+                return Advance();
+            }
+        }
+
+        throw ReportErrorAndAbort(errorMessage);
+    }
+
+    private Token ConsumeTypeOrIdentifier(string errorMessage)
+    {
+        return ConsumeAny([
+            TokenType.Byte,
+            TokenType.Short,
+            TokenType.UShort,
+            TokenType.Int,
+            TokenType.UInt,
+            TokenType.Long,
+            TokenType.ULong,
+            TokenType.Float,
+            TokenType.Double,
+            TokenType.String,
+            TokenType.Identifier,
+        ], errorMessage);
+    }
+
 
     private class ParsingAbortedException : Exception
     {
@@ -167,14 +245,25 @@ public class Parser
 
     private FunctionDeclarationStatement ParseFunctionDeclaration()
     {
-        var returnType = Consume(TokenType.Identifier, "Expected a function return type.");
+        Token returnType;
+        if (Match(TokenType.Void))
+        {
+            returnType = Previous();
+        }
+        else
+        {
+            returnType = ConsumeTypeOrIdentifier("Expected a function return type.");
+        }
         var identifier = Consume(TokenType.Identifier, "Expected a function name.");
 
         var parameters = new List<DeclarationStatement>();
         Consume(TokenType.ParenStart, "Expected ( before function parameter list.");
-        while (!Check(TokenType.ParenEnd))
+        if (!Check(TokenType.ParenEnd))
         {
-            parameters.Add(ParseFunctionParameter());
+            do
+            {
+                parameters.Add(ParseFunctionParameter());
+            } while (Match(TokenType.Comma));
         }
         Consume(TokenType.ParenEnd, "Expected ) at the end of function parameter list.");
 
@@ -191,7 +280,7 @@ public class Parser
 
     private DeclarationStatement ParseFunctionParameter()
     {
-        var type = Consume(TokenType.Identifier, "Expected a function parameter type.");
+        var type = ConsumeTypeOrIdentifier("Expected a function parameter type.");
         var identifier = Consume(TokenType.Identifier, "Expected a function parameter name.");
 
         return new DeclarationStatement()
@@ -224,7 +313,7 @@ public class Parser
             return ParseVarDeclaration();
         }
 
-        if (Match(TokenType.Identifier) && Check(TokenType.Identifier))
+        if (MatchVariableType() || MatchVariableTypeIdentifier())
         {
             return ParseTypedVarDeclaration();
         }
@@ -322,11 +411,11 @@ public class Parser
         var ifBody = ParseBlock();
 
         var elseifStatements = new List<IfStatement>();
-        while (Match(TokenType.ElseIf))
+        while (MatchElseIf())
         {
-            Consume(TokenType.ParenStart, "Expected ( before if condition");
+            Consume(TokenType.ParenStart, "Expected ( before else if condition");
             var elseIfCondition = ParseExpression();
-            Consume(TokenType.ParenEnd, "Expected ) at the end of if condition");
+            Consume(TokenType.ParenEnd, "Expected ) at the end of else if condition");
             var elseIfBody = ParseBlock();
 
             var elseIf = new IfStatement()
@@ -379,7 +468,7 @@ public class Parser
         {
             initializer = ParseVarDeclaration();
         }
-        else if (Match(TokenType.Identifier) && Check(TokenType.Identifier))
+        else if (MatchVariableTypeIdentifier())
         {
             initializer = ParseTypedVarDeclaration();
         }

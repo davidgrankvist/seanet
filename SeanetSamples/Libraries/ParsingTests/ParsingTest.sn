@@ -1,4 +1,4 @@
-int TestTheParser(int x)
+int TestTheParser(int x, string s)
 {
     var y = x + 1;
     int z = 1337;
@@ -8,7 +8,10 @@ int TestTheParser(int x)
     {
         z = z + 1;
     }
-    else 
+    else if (w <= x)
+    {
+    }
+    else
     {
 
     }
@@ -18,7 +21,7 @@ int TestTheParser(int x)
         x = x + 15;
     }
 
-    for (var i = 0; i < 10; i++)
+    for (var i = 0; i < 10; i = i + 1)
     {
 
     }

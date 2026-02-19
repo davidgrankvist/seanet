@@ -593,6 +593,9 @@ public class Scanner
             case "if":
                 tokenType = TokenType.If;
                 break;
+            case "else":
+                tokenType = TokenType.Else;
+                break;
             case "return":
                 tokenType = TokenType.Return;
                 break;

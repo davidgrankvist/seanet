@@ -16,7 +16,6 @@ public enum TokenType
     // Control flow
     If,
     Else,
-    ElseIf,
     Return,
     For,
     While,
