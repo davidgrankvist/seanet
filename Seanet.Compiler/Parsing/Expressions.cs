@@ -19,7 +19,7 @@ public class GroupExpression : Expression
     public required Expression Expression { get; init; }
 }
 
-public class UnaryExpression : Expression
+public class PrefixUnaryExpression : Expression
 {
     public required Token Operator { get; init; }
     public required Expression Expression { get; init; }
@@ -66,5 +66,11 @@ public class PropertyAssignmentExpression : Expression
 
 public class VariableExpression : Expression
 {
+    public required Token Identifier { get; init; }
+}
+
+public class PostfixIncrementExpression : Expression
+{
+    public required Token Operator { get; init; }
     public required Token Identifier { get; init; }
 }

@@ -16,14 +16,32 @@ int TestTheParser(int x, string s)
 
     }
 
-    while(x < 100)
+    while (x < 100)
     {
         x = x + 15;
     }
 
+    int j = 0;
     for (var i = 0; i < 10; i = i + 1)
     {
+        j++;
+        ++j;
+        --j;
+        j--;
 
+        if (j != 13)
+        {
+            j += 5;
+            j -= 5;
+            j *= 5;
+            j /= 5;
+
+            var v1 = i & j;
+            var v2 = i | j;
+            var v3 = i ^ j;
+            
+            var m = v3 % 13;
+        }
     }
 
     return y + z;

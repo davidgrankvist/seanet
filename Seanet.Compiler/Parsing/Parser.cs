@@ -1,4 +1,3 @@
-using System.Security;
 using Seanet.Compiler.Errors;
 using Seanet.Compiler.Scanning;
 
@@ -603,7 +602,11 @@ public class Parser
     {
         var expression = ParseLogicalOr();
 
-        if (Match(TokenType.Equal))
+        if (MatchAny(TokenType.Equal,
+            TokenType.PlusEquals,
+            TokenType.MinusEquals,
+            TokenType.StarEquals,
+            TokenType.SlashEquals))
         {
             // Use the equals token for error reporting that points to where the assignment occurred.
             var equalsToken = Previous();
@@ -650,13 +653,70 @@ public class Parser
 
     private Expression ParseLogicalAnd()
     {
-        var expression = ParseEquality();
+        var expression = ParseBitwiseOr();
 
         while (Match(TokenType.LogicalAnd))
         {
             var operatorToken = Previous();
+            var rightExpression = ParseBitwiseOr();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseBitwiseOr()
+    {
+        var expression = ParseBitwiseXor();
+
+        while (Match(TokenType.BitwiseOr))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseBitwiseXor();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseBitwiseXor()
+    {
+        var expression = ParseBitwiseAnd();
+
+        while (Match(TokenType.BitwiseXor))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseBitwiseAnd();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseBitwiseAnd()
+    {
+        var expression = ParseEquality();
+
+        while (Match(TokenType.BitwiseAnd))
+        {
+            var operatorToken = Previous();
             var rightExpression = ParseEquality();
-            expression = new LogicalExpression()
+            expression = new BinaryExpression()
             {
                 Operator = operatorToken,
                 First = expression,
@@ -688,9 +748,28 @@ public class Parser
 
     private Expression ParseComparison()
     {
-        var expression = ParseTerm();
+        var expression = ParseBitShift();
 
         while (MatchAny(TokenType.Greater, TokenType.GreaterEqual, TokenType.Less, TokenType.LessEqual))
+        {
+            var operatorToken = Previous();
+            var rightExpression = ParseBitShift();
+            expression = new BinaryExpression()
+            {
+                Operator = operatorToken,
+                First = expression,
+                Second = rightExpression,
+            };
+        }
+
+        return expression;
+    }
+
+    private Expression ParseBitShift()
+    {
+        var expression = ParseTerm();
+
+        while (MatchAny(TokenType.BitShiftLeft, TokenType.BitShiftRight))
         {
             var operatorToken = Previous();
             var rightExpression = ParseTerm();
@@ -728,7 +807,7 @@ public class Parser
     {
         var expression = ParseUnary();
 
-        while (MatchAny(TokenType.Star, TokenType.Slash))
+        while (MatchAny(TokenType.Star, TokenType.Slash, TokenType.Mod))
         {
             var operatorToken = Previous();
             var rightExpression = ParseUnary();
@@ -745,11 +824,11 @@ public class Parser
 
     private Expression ParseUnary()
     {
-        if (MatchAny(TokenType.LogicalNot, TokenType.Minus))
+        if (MatchAny(TokenType.LogicalNot, TokenType.Minus, TokenType.PlusPlus, TokenType.MinusMinus))
         {
             var operatorToken = Previous();
             var expression = ParseUnary();
-            return new UnaryExpression()
+            return new PrefixUnaryExpression()
             {
                 Operator = operatorToken,
                 Expression = expression,
@@ -829,10 +908,23 @@ public class Parser
 
         if (Match(TokenType.Identifier))
         {
-            return new VariableExpression()
+            var identifier = Previous();
+            if (MatchAny(TokenType.PlusPlus, TokenType.MinusMinus))
             {
-                Identifier = Previous(),
-            };
+                var operatorToken = Previous();
+                return new PostfixIncrementExpression()
+                {
+                    Operator = operatorToken,
+                    Identifier = identifier,
+                };
+            }
+            else
+            {
+                return new VariableExpression()
+                {
+                    Identifier = identifier,
+                };
+            }
         }
 
         throw ReportErrorAndAbort("Unexpected expression. Expected a literal, parenthesis grouping or identifier.");

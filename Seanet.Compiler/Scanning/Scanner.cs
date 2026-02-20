@@ -83,16 +83,26 @@ public class Scanner
             case ';':
                 ProduceToken(TokenType.SemiColon);
                 break;
-            case '*':
-                ProduceToken(TokenType.Star);
-                break;
             case '~':
                 ProduceToken(TokenType.LogcalNot);
                 break;
             case '^':
                 ProduceToken(TokenType.BitwiseXor);
                 break;
+            case '%':
+                ProduceToken(TokenType.Mod);
+                break;
             // Multiple character tokens
+            case '*':
+                if (Match('='))
+                {
+                    ProduceToken(TokenType.StarEquals);
+                }
+                else
+                {
+                    ProduceToken(TokenType.Star);
+                }
+                break;
             case '+':
                 if (Match('+'))
                 {
@@ -130,6 +140,10 @@ public class Scanner
                 {
                     ScanMultiLineComment();
                 }
+                else if (Match('='))
+                {
+                    ProduceToken(TokenType.SlashEquals);
+                }
                 else
                 {
                     ProduceToken(TokenType.Slash);
@@ -160,6 +174,10 @@ public class Scanner
                 {
                     ProduceToken(TokenType.LessEqual);
                 }
+                else if (Match('<'))
+                {
+                    ProduceToken(TokenType.BitShiftLeft);
+                }
                 else
                 {
                     ProduceToken(TokenType.Less);
@@ -169,6 +187,10 @@ public class Scanner
                 if (Match('='))
                 {
                     ProduceToken(TokenType.GreaterEqual);
+                }
+                else if (Match('>'))
+                {
+                    ProduceToken(TokenType.BitShiftRight);
                 }
                 else
                 {
@@ -244,7 +266,7 @@ public class Scanner
             {
                 // advance past the e
                 Advance();
-                
+
                 if (PeekNext() == '-' || PeekNext() == '+')
                 {
                     // advance past the - or +
