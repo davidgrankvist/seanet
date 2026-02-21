@@ -83,6 +83,11 @@ public class ArrayAccessExpression : Expression
 
 public class NewSizedArrayExpression : Expression
 {
-    public required ArrayTypeInfo Type { get; set; }
+    public required ArrayTypeInfo Type { get; init; }
     public required List<Expression> Sizes { get; init; }
+}
+
+public class NewStructExpression : Expression
+{
+    public required SingleTokenTypeInfo Type { get; init; }
 }

@@ -172,9 +172,9 @@ public class Parser
         throw ReportErrorAndAbort(errorMessage);
     }
 
-    private TypeInfo ConsumeTypeOrIdentifier(string errorMessage)
+    private Token ConsumeBuiltinTypeOrIdentifier(string errorMessage)
     {
-        var typeToken = ConsumeAny([
+        return ConsumeAny([
             TokenType.Byte,
             TokenType.Short,
             TokenType.UShort,
@@ -187,6 +187,11 @@ public class Parser
             TokenType.String,
             TokenType.Identifier,
         ], errorMessage);
+    }
+
+    private TypeInfo ConsumeTypeOrIdentifier(string errorMessage)
+    {
+        var typeToken = ConsumeBuiltinTypeOrIdentifier(errorMessage);
 
         if (Match(TokenType.SquareStart))
         {
@@ -237,8 +242,17 @@ public class Parser
 
         while (!IsDone())
         {
-            var declaration = ParseFunctionDeclaration();
-            statements.Add(declaration);
+            if (Match(TokenType.Struct))
+            {
+                var declaration = ParseStructDeclaration();
+                statements.Add(declaration);
+            }
+            else
+            {
+                var declaration = ParseFunctionDeclaration();
+                statements.Add(declaration);
+            }
+
         }
 
         if (Peek().TokenType != TokenType.Eof)
@@ -247,6 +261,31 @@ public class Parser
         }
 
         return statements;
+    }
+
+    private StructDeclarationStatement ParseStructDeclaration()
+    {
+        var identifier = Consume(TokenType.Identifier, "Expected a struct name in struct declaration.");
+        Consume(TokenType.CurlyStart, "Expected { before struct fields.");
+
+        var fields = new List<DeclarationStatement>();
+        while (!Check(TokenType.CurlyEnd))
+        {
+            var fieldTypeInfo = ConsumeTypeOrIdentifier("Failed to parse struct. Expected a field type.");
+            var declaration = ParseTypedVarDeclaration(fieldTypeInfo);
+            if (declaration is not DeclarationStatement declarationStatement)
+            {
+                throw ReportErrorAndAbort("Failed to parse struct field. Must be a variable declaration without assignment.");
+            }
+            fields.Add(declarationStatement);
+        }
+        Consume(TokenType.CurlyEnd, "Expected } after struct fields.");
+
+        return new StructDeclarationStatement
+        {
+            Identifier = identifier,
+            Fields = fields,
+        };
     }
 
     private FunctionDeclarationStatement ParseFunctionDeclaration()
@@ -1014,41 +1053,72 @@ public class Parser
 
     private Expression ParseNewExpression()
     {
-        // parse sized array expressions like int[5] or int[SomeFunction()]
         if (MatchArrayItemType())
         {
-            var typeToken = Previous();
-            var itemType = new SingleTokenTypeInfo
+            if (Check(TokenType.SquareStart))
             {
-                Type = typeToken,
-            };
-
-            TypeInfo typeInfo = itemType;
-            var arraySizes = new List<Expression>();
-            while (Match(TokenType.SquareStart))
-            {
-                var arraySize = ParseExpression();
-                arraySizes.Add(arraySize);
-
-                typeInfo = new ArrayTypeInfo
-                {
-                    ItemType = typeInfo,
-                };
-
-                Consume(TokenType.SquareEnd, "Expected ] at the end of sized array type.");
+                return ParseSizedArrayConstructorCall();
             }
-
-            if (typeInfo is ArrayTypeInfo arrayType)
+            else
             {
-                return new NewSizedArrayExpression
-                {
-                    Type = arrayType,
-                    Sizes = arraySizes,
-                };
+                return ParseStructConstructorCall();
             }
         }
 
-        throw ReportErrorAndAbort("Failed to parse new expression. Unknown constructor.");
+        throw ReportErrorAndAbort("Failed to parse new expression. Unexpected constructor.");
+    }
+
+    private NewStructExpression ParseStructConstructorCall()
+    {
+        var typeToken = Peek();
+        var typeInfo = new SingleTokenTypeInfo
+        {
+            Type = typeToken,
+        };
+        Consume(TokenType.ParenStart, "Expected ( at the beginning of struct constructor call.");
+        // No arguments for now. Not sure if structs in this language will have parameterized constructors.
+        Consume(TokenType.ParenEnd, "Expected ) at the end of struct constructor call.");
+
+        return new NewStructExpression
+        {
+            Type = typeInfo,
+        };
+    }
+
+    // parse sized array expressions like int[5] or int[SomeFunction()]
+    private Expression ParseSizedArrayConstructorCall()
+    {
+        var typeToken = Previous();
+        var itemType = new SingleTokenTypeInfo
+        {
+            Type = typeToken,
+        };
+
+        TypeInfo typeInfo = itemType;
+        var arraySizes = new List<Expression>();
+        while (Match(TokenType.SquareStart))
+        {
+            var arraySize = ParseExpression();
+            arraySizes.Add(arraySize);
+
+            typeInfo = new ArrayTypeInfo
+            {
+                ItemType = typeInfo,
+            };
+
+            Consume(TokenType.SquareEnd, "Expected ] at the end of sized array type.");
+        }
+
+        if (typeInfo is ArrayTypeInfo arrayType)
+        {
+            return new NewSizedArrayExpression
+            {
+                Type = arrayType,
+                Sizes = arraySizes,
+            };
+        }
+
+        throw ReportErrorAndAbort("Failed to parse new array expression. Unexpected token.");
     }
 
     private Expression ParsePrimary()

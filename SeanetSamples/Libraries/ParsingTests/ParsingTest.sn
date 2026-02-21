@@ -129,3 +129,15 @@ void TestArrayThings(int[] ints, string[] strings, Thing[] things)
     int[][] a;
 }
 
+struct HelloStruct
+{
+    int x;
+    double[][] arr;
+    Thing thing;
+    Thing[] things;
+}
+
+HelloStruct MakeStruct()
+{
+    return new HelloStruct();
+}

@@ -61,3 +61,9 @@ public class ReturnStatement : Statement
 {
     public required Expression Value;
 }
+
+public class StructDeclarationStatement : Statement
+{
+    public required Token Identifier { get; init; }
+    public required List<DeclarationStatement> Fields { get; init; }
+}

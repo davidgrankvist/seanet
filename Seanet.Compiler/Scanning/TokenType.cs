@@ -77,6 +77,7 @@ public enum TokenType
     Var,
     Comment,
     New,
+    Struct,
     // Produced at the end of scanning
     Eof,
 }
