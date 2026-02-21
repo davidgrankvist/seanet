@@ -93,16 +93,6 @@ public class Scanner
                 ProduceToken(TokenType.Mod);
                 break;
             // Multiple character tokens
-            case '*':
-                if (Match('='))
-                {
-                    ProduceToken(TokenType.StarEquals);
-                }
-                else
-                {
-                    ProduceToken(TokenType.Star);
-                }
-                break;
             case '+':
                 if (Match('+'))
                 {
@@ -147,6 +137,16 @@ public class Scanner
                 else
                 {
                     ProduceToken(TokenType.Slash);
+                }
+                break;
+            case '*':
+                if (Match('='))
+                {
+                    ProduceToken(TokenType.StarEquals);
+                }
+                else
+                {
+                    ProduceToken(TokenType.Star);
                 }
                 break;
             case '!':
@@ -576,6 +576,8 @@ public class Scanner
         }
         else
         {
+            Advance(); // move past the closing *
+            Advance(); // move past the closing /
             ProduceToken(TokenType.Comment);
         }
     }

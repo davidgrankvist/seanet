@@ -1,3 +1,16 @@
+// single line
+/*
+multi
+line
+*/
+void TestComments()
+{
+    // single line in block
+    /*
+     * multi line in block
+     */
+}
+
 int TestTheParser(int x, string s)
 {
     var y = x + 1;
@@ -83,6 +96,7 @@ void TestArrayThings(int[] ints, string[] strings, Thing[] things)
     int i1 = ints[0];
     var i2 = ints[1];
 
+    // test comment
     string s1 = strings[0];
     var s2 = strings[1];
 
@@ -98,3 +112,4 @@ void TestArrayThings(int[] ints, string[] strings, Thing[] things)
 
     int[][] a;
 }
+

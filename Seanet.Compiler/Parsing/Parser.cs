@@ -17,14 +17,15 @@ public class Parser
 
     public Statement Parse(string file, List<Token> tokens)
     {
-        this.tokens = tokens;
+        // simply ignore comments for now
+        this.tokens = tokens.Where(x => x.TokenType != TokenType.Comment).ToList();
         current = 0;
         this.file = file;
 
         Statement? syntaxTree = null;
         try
         {
-            syntaxTree = ParseProgram(tokens);
+            syntaxTree = ParseProgram();
         }
         catch (ParsingAbortedException)
         {
@@ -220,7 +221,7 @@ public class Parser
         return new ParsingAbortedException();
     }
 
-    private Statement ParseProgram(List<Token> tokens)
+    private ProgramStatement ParseProgram()
     {
         var statements = ParseTopLevelStatements();
 
