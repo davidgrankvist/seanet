@@ -74,3 +74,9 @@ public class PostfixIncrementExpression : Expression
     public required Token Operator { get; init; }
     public required Token Identifier { get; init; }
 }
+
+public class ArrayAccessExpression : Expression
+{
+    public required Expression Array { get; init; }
+    public required Expression Index { get; init; }
+}

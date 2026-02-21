@@ -46,3 +46,55 @@ int TestTheParser(int x, string s)
 
     return y + z;
 }
+
+int MakeIndex()
+{
+    return 2;
+}
+
+int[] MakeArray()
+{
+    return 1337;
+}
+
+
+int[][] Make2DArray()
+{
+    return 1337;
+}
+
+void Process2DArray(double[][] arr)
+{
+
+}
+
+Stuff[][] Make2DArrayStuff()
+{
+    return 1337;
+}
+
+void Process2DArrayStuff(Stuff[][] arr)
+{
+    Stuff[][] arr2;
+}
+
+void TestArrayThings(int[] ints, string[] strings, Thing[] things)
+{
+    int i1 = ints[0];
+    var i2 = ints[1];
+
+    string s1 = strings[0];
+    var s2 = strings[1];
+
+    Thing t1 = things[0];
+    var t2 = things[1];
+
+    int[] arr = MakeArray();
+
+    var a = MakeArray()[MakeIndex()];
+    int b = MakeArray()[MakeIndex()];
+
+    var a = Make2DArray()[0][0];
+
+    int[][] a;
+}

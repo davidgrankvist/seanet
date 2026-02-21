@@ -26,7 +26,7 @@ public class BlockStatement : Statement
 
 public class DeclarationStatement : Statement
 {
-    public required Token Type { get; init; }
+    public required TypeInfo Type { get; init; }
     public required Token Identifier { get; init; }
 }
 
@@ -51,7 +51,7 @@ public class WhileStatement : Statement
 
 public class FunctionDeclarationStatement : Statement
 {
-    public required Token ReturnType { get; init; }
+    public required TypeInfo ReturnType { get; init; }
     public required Token Identifier { get; init; }
     public required List<DeclarationStatement> Parameters { get; init; }
     public required BlockStatement Body { get; init; }

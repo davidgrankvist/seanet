@@ -121,7 +121,7 @@ public class Parser
         );
     }
 
-    private bool MatchVariableType()
+    private bool MatchBuiltinVariableType()
     {
         return MatchAny(
             TokenType.Byte,
@@ -132,17 +132,8 @@ public class Parser
             TokenType.Long,
             TokenType.ULong,
             TokenType.Float,
-            TokenType.Double);
-    }
-
-    private bool MatchVariableTypeIdentifier()
-    {
-        if (Check(TokenType.Identifier) && CheckNext(TokenType.Identifier))
-        {
-            Advance();
-            return true;
-        }
-        return false;
+            TokenType.Double,
+            TokenType.String);
     }
 
     private bool MatchElseIf()
@@ -180,9 +171,9 @@ public class Parser
         throw ReportErrorAndAbort(errorMessage);
     }
 
-    private Token ConsumeTypeOrIdentifier(string errorMessage)
+    private TypeInfo ConsumeTypeOrIdentifier(string errorMessage)
     {
-        return ConsumeAny([
+        var typeToken = ConsumeAny([
             TokenType.Byte,
             TokenType.Short,
             TokenType.UShort,
@@ -195,9 +186,24 @@ public class Parser
             TokenType.String,
             TokenType.Identifier,
         ], errorMessage);
+
+        if (Match(TokenType.SquareStart))
+        {
+            return ConsumeArrayType(typeToken);
+        }
+
+        return new SingleTokenTypeInfo
+        {
+            Type = typeToken,
+        };
     }
 
-
+    /// <summary>
+    /// Indicates that parsing was aborted.
+    /// 
+    /// This exception is used internally to abort parsing down in the call stack.
+    /// It is caught and the user facing errors can be read from the error reporter.
+    /// </summary>
     private class ParsingAbortedException : Exception
     {
     }
@@ -244,10 +250,14 @@ public class Parser
 
     private FunctionDeclarationStatement ParseFunctionDeclaration()
     {
-        Token returnType;
+        TypeInfo returnType;
         if (Match(TokenType.Void))
         {
-            returnType = Previous();
+            var voidToken = Previous();
+            returnType = new SingleTokenTypeInfo
+            {
+                Type = voidToken,
+            };
         }
         else
         {
@@ -305,6 +315,94 @@ public class Parser
         };
     }
 
+    private bool MatchTypeIdentifier()
+    {
+        // Look ahead to make sure that the identifier is used as a type and is not a variable. 
+        if (Check(TokenType.Identifier) && CheckNext(TokenType.Identifier))
+        {
+            Advance();
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Matches a type that can be associated with a variable and returns the type info
+    /// if there is a match.
+    ///
+    /// Handles builtin types like int and int[] and user defined types like
+    /// SomeType and SomeType[].
+    private bool MatchVariableType(out TypeInfo typeInfo)
+    {
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+        typeInfo = null;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+        // types like int or int[]
+        if (MatchBuiltinVariableType())
+        {
+            var typeToken = Previous();
+            if (Match(TokenType.SquareStart))
+            {
+                typeInfo = ConsumeArrayType(typeToken);
+            }
+            else
+            {
+                typeInfo = new SingleTokenTypeInfo()
+                {
+                    Type = typeToken,
+                };
+            }
+        }
+
+        // library or user defined types, but not arrays
+        if (MatchTypeIdentifier())
+        {
+            var typeToken = Previous();
+            typeInfo = new SingleTokenTypeInfo()
+            {
+                Type = typeToken
+            };
+        }
+
+        // array of library or user defined types
+        if (Check(TokenType.Identifier) && CheckNext(TokenType.SquareStart))
+        {
+            var typeToken = Peek();
+            Advance(); // move past type
+            Advance(); // move past opening [
+            typeInfo = ConsumeArrayType(typeToken);
+        }
+
+        return typeInfo != null;
+    }
+
+    private ArrayTypeInfo ConsumeArrayType(Token itemTypeToken)
+    {
+        Consume(TokenType.SquareEnd, "Expected ] at the end of array type.");
+        var itemType = new SingleTokenTypeInfo
+        {
+            Type = itemTypeToken,
+        };
+        var arrayType = new ArrayTypeInfo
+        {
+            ItemType = itemType,
+        };
+
+        // Handle multi-dimensional arrays by nesting array type infos.
+        while (Match(TokenType.SquareStart))
+        {
+            Consume(TokenType.SquareEnd, "Expected ] at the end of array type.");
+
+            arrayType = new ArrayTypeInfo
+            {
+                ItemType = arrayType,
+            };
+        }
+
+        return arrayType;
+    }
+
     private Statement ParseDeclaration()
     {
         if (Match(TokenType.Var))
@@ -312,9 +410,9 @@ public class Parser
             return ParseVarDeclaration();
         }
 
-        if (MatchVariableType() || MatchVariableTypeIdentifier())
+        if (MatchVariableType(out var typeInfo))
         {
-            return ParseTypedVarDeclaration();
+            return ParseTypedVarDeclaration(typeInfo);
         }
 
         return ParseStatement();
@@ -353,31 +451,35 @@ public class Parser
     private DeclarationWithAssignmentStatement ParseVarDeclaration()
     {
         var varToken = Previous();
-        var identifier = Consume(TokenType.Identifier, "Expected a variable name in declaration.");
+        var identifier = Consume(TokenType.Identifier, "Expected a variable name in inferred type declaration.");
         Consume(TokenType.Equal, "A var declaration must be assigned to a value.");
         var value = ParseExpression();
-        Consume(TokenType.SemiColon, "Expected ; at the end of variable declaration.");
+        Consume(TokenType.SemiColon, "Expected ; at the end of inferred type variable declaration.");
+
+        var typeInfo = new SingleTokenTypeInfo
+        {
+            Type = varToken,
+        };
 
         return new DeclarationWithAssignmentStatement()
         {
-            Type = varToken,
+            Type = typeInfo,
             Identifier = identifier,
             Value = value,
         };
     }
 
-    private Statement ParseTypedVarDeclaration()
+    private Statement ParseTypedVarDeclaration(TypeInfo typeInfo)
     {
-        var type = Previous();
         var identifier = Consume(TokenType.Identifier, "Expected a variable name in declaration.");
 
         if (Match(TokenType.Equal))
         {
             var value = ParseExpression();
-            Consume(TokenType.SemiColon, "Expected ; at the end of variable declaration");
+            Consume(TokenType.SemiColon, "Expected ; at the end of typed variable declaration");
             return new DeclarationWithAssignmentStatement()
             {
-                Type = type,
+                Type = typeInfo,
                 Identifier = identifier,
                 Value = value,
             };
@@ -386,7 +488,7 @@ public class Parser
 
         return new DeclarationStatement()
         {
-            Type = type,
+            Type = typeInfo,
             Identifier = identifier,
         };
     }
@@ -467,9 +569,9 @@ public class Parser
         {
             initializer = ParseVarDeclaration();
         }
-        else if (MatchVariableTypeIdentifier())
+        else if (MatchVariableType(out var typeInfo))
         {
-            initializer = ParseTypedVarDeclaration();
+            initializer = ParseTypedVarDeclaration(typeInfo);
         }
         else
         {
@@ -838,6 +940,9 @@ public class Parser
         return ParseCall();
     }
 
+    /// <summary>
+    /// Handles chains of calls, property access and array access.
+    /// </summary>
     private Expression ParseCall()
     {
         var expression = ParsePrimary();
@@ -851,10 +956,20 @@ public class Parser
             else if (Match(TokenType.Dot))
             {
                 var identifierToken = Consume(TokenType.Identifier, "Expected an identifier after property accessor.");
-                return new PropertyAccessExpression
+                expression = new PropertyAccessExpression
                 {
                     Object = expression,
                     Property = identifierToken,
+                };
+            }
+            else if (Match(TokenType.SquareStart))
+            {
+                var accessExpression = ParseExpression();
+                Consume(TokenType.SquareEnd, "Expected ] at the end of array access.");
+                expression = new ArrayAccessExpression()
+                {
+                    Array = expression,
+                    Index = accessExpression,
                 };
             }
             else
@@ -863,14 +978,19 @@ public class Parser
             }
         }
 
+
         return expression;
     }
 
     private Expression ParseCallExpression(Expression callee)
     {
-        if (Check(TokenType.ParenEnd))
+        if (Match(TokenType.ParenEnd))
         {
-            return callee;
+            return new CallExpression()
+            {
+                Callee = callee,
+                Arguments = [],
+            };
         }
 
         var arguments = new List<Expression>();
