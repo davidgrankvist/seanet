@@ -156,3 +156,19 @@ void EarlyReturn(bool b)
 
     DoThingAndStuff();
 }
+
+void MutateInt(ref int x)
+{
+    x += 1337;
+}
+
+void MutateStruct(ref HelloStruct hello)
+{
+    hello.x += 1337;
+}
+
+void PassStructAsRef()
+{
+    var hello = new HelloStruct();
+    MutateStruct(ref hello);
+}

@@ -1,3 +1,4 @@
+using System.CommandLine;
 using Seanet.Compiler.Errors;
 using Seanet.Compiler.Scanning;
 
@@ -270,12 +271,12 @@ public class Parser
         var identifier = Consume(TokenType.Identifier, "Expected a struct name in struct declaration.");
         Consume(TokenType.CurlyStart, "Expected { before struct fields.");
 
-        var fields = new List<DeclarationStatement>();
+        var fields = new List<VariableDeclarationStatement>();
         while (!Check(TokenType.CurlyEnd))
         {
             var fieldTypeInfo = ConsumeTypeOrIdentifier("Failed to parse struct. Expected a field type.");
             var declaration = ParseTypedVarDeclaration(fieldTypeInfo);
-            if (declaration is not DeclarationStatement declarationStatement)
+            if (declaration is not VariableDeclarationStatement declarationStatement)
             {
                 throw ReportErrorAndAbort("Failed to parse struct field. Must be a variable declaration without assignment.");
             }
@@ -307,7 +308,7 @@ public class Parser
         }
         var identifier = Consume(TokenType.Identifier, "Expected a function name.");
 
-        var parameters = new List<DeclarationStatement>();
+        var parameters = new List<VariableDeclarationStatement>();
         Consume(TokenType.ParenStart, "Expected ( before function parameter list.");
         if (!Check(TokenType.ParenEnd))
         {
@@ -329,15 +330,21 @@ public class Parser
         };
     }
 
-    private DeclarationStatement ParseFunctionParameter()
+    private VariableDeclarationStatement ParseFunctionParameter()
     {
+        var isRef = false;
+        if (Match(TokenType.Ref))
+        {
+            isRef = true;
+        }
         var type = ConsumeTypeOrIdentifier("Expected a function parameter type.");
         var identifier = Consume(TokenType.Identifier, "Expected a function parameter name.");
 
-        return new DeclarationStatement()
+        return new VariableDeclarationStatement()
         {
             Type = type,
             Identifier = identifier,
+            IsReference = isRef,
         };
     }
 
@@ -495,7 +502,7 @@ public class Parser
         return ParseExpressionStatement();
     }
 
-    private DeclarationWithAssignmentStatement ParseVarDeclaration()
+    private VariableDeclarationWithAssignmentStatement ParseVarDeclaration()
     {
         var varToken = Previous();
         var identifier = Consume(TokenType.Identifier, "Expected a variable name in inferred type declaration.");
@@ -508,7 +515,7 @@ public class Parser
             Type = varToken,
         };
 
-        return new DeclarationWithAssignmentStatement()
+        return new VariableDeclarationWithAssignmentStatement()
         {
             Type = typeInfo,
             Identifier = identifier,
@@ -524,7 +531,7 @@ public class Parser
         {
             var value = ParseExpression();
             Consume(TokenType.SemiColon, "Expected ; at the end of typed variable declaration");
-            return new DeclarationWithAssignmentStatement()
+            return new VariableDeclarationWithAssignmentStatement()
             {
                 Type = typeInfo,
                 Identifier = identifier,
@@ -533,7 +540,7 @@ public class Parser
         }
         Consume(TokenType.SemiColon, "Expected ; at the end of variable declaration");
 
-        return new DeclarationStatement()
+        return new VariableDeclarationStatement()
         {
             Type = typeInfo,
             Identifier = identifier,
@@ -1048,8 +1055,25 @@ public class Parser
         var arguments = new List<Expression>();
         do
         {
-            arguments.Add(ParseExpression());
+            Expression argumentExpression;
+            if (Match(TokenType.Ref))
+            {
+                var identifier = Consume(TokenType.Identifier, "Invalid ref. Expected a variable.");
+                argumentExpression = new VariableExpression
+                {
+                    Identifier = identifier,
+                    IsReference = true,
+                };
+            }
+            else
+            {
+                argumentExpression = ParseExpression();
+            }
+
+            arguments.Add(argumentExpression);
         } while (Match(TokenType.Comma));
+
+        Consume(TokenType.ParenEnd, "Expected ) at the end of function call.");
 
         return new CallExpression()
         {
@@ -1165,6 +1189,7 @@ public class Parser
                 return new VariableExpression()
                 {
                     Identifier = identifier,
+                    IsReference = false,
                 };
             }
         }

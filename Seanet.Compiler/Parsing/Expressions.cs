@@ -67,6 +67,7 @@ public class PropertyAssignmentExpression : Expression
 public class VariableExpression : Expression
 {
     public required Token Identifier { get; init; }
+    public required bool IsReference { get; init; } = false;
 }
 
 public class PostfixIncrementExpression : Expression

@@ -680,6 +680,9 @@ public class Scanner
             case "struct":
                 tokenType = TokenType.Struct;
                 break;
+            case "ref":
+                tokenType = TokenType.Ref;
+                break;
             default:
                 tokenType = TokenType.Eof; // dummy value
                 didMatch = false;

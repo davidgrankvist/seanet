@@ -24,13 +24,14 @@ public class BlockStatement : Statement
     public required List<Statement> Statements { get; init; }
 }
 
-public class DeclarationStatement : Statement
+public class VariableDeclarationStatement : Statement
 {
     public required TypeInfo Type { get; init; }
     public required Token Identifier { get; init; }
+    public bool IsReference { get; init; } = false;
 }
 
-public class DeclarationWithAssignmentStatement : DeclarationStatement
+public class VariableDeclarationWithAssignmentStatement : VariableDeclarationStatement
 {
     public required Expression Value { get; init; }
 }
@@ -53,7 +54,7 @@ public class FunctionDeclarationStatement : Statement
 {
     public required TypeInfo ReturnType { get; init; }
     public required Token Identifier { get; init; }
-    public required List<DeclarationStatement> Parameters { get; init; }
+    public required List<VariableDeclarationStatement> Parameters { get; init; }
     public required BlockStatement Body { get; init; }
 }
 
@@ -69,5 +70,5 @@ public class ReturnExpressionStatement : Statement
 public class StructDeclarationStatement : Statement
 {
     public required Token Identifier { get; init; }
-    public required List<DeclarationStatement> Fields { get; init; }
+    public required List<VariableDeclarationStatement> Fields { get; init; }
 }
