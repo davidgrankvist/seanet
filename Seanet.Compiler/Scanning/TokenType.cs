@@ -22,6 +22,7 @@ public enum TokenType
     Break,
     Continue,
     // Types
+    Bool,
     Byte,
     Short,
     UShort,

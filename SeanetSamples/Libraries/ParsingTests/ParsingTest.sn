@@ -141,3 +141,18 @@ HelloStruct MakeStruct()
 {
     return new HelloStruct();
 }
+
+void DoThingAndStuff()
+{
+
+}
+
+void EarlyReturn(bool b)
+{
+    if (b)
+    {
+        return;
+    }
+
+    DoThingAndStuff();
+}

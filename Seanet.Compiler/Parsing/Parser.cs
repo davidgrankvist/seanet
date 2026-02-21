@@ -125,6 +125,7 @@ public class Parser
     private bool MatchBuiltinVariableType()
     {
         return MatchAny(
+            TokenType.Bool,
             TokenType.Byte,
             TokenType.Short,
             TokenType.UShort,
@@ -175,6 +176,7 @@ public class Parser
     private Token ConsumeBuiltinTypeOrIdentifier(string errorMessage)
     {
         return ConsumeAny([
+            TokenType.Bool,
             TokenType.Byte,
             TokenType.Short,
             TokenType.UShort,
@@ -538,12 +540,17 @@ public class Parser
         };
     }
 
-    private ReturnStatement ParseReturnStatement()
+    private Statement ParseReturnStatement()
     {
+        if (Match(TokenType.SemiColon))
+        {
+            return new ReturnEmptyStatement();
+        }
+
         var value = ParseExpression();
         Consume(TokenType.SemiColon, "Expected ; at the end of return statement");
 
-        return new ReturnStatement()
+        return new ReturnExpressionStatement()
         {
             Value = value,
         };

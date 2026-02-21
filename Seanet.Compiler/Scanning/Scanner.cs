@@ -635,6 +635,9 @@ public class Scanner
             case "continue":
                 tokenType = TokenType.Break;
                 break;
+            case "bool":
+                tokenType = TokenType.Bool;
+                break;
             case "byte":
                 tokenType = TokenType.Byte;
                 break;

@@ -57,7 +57,11 @@ public class FunctionDeclarationStatement : Statement
     public required BlockStatement Body { get; init; }
 }
 
-public class ReturnStatement : Statement
+public class ReturnEmptyStatement : Statement
+{
+}
+
+public class ReturnExpressionStatement : Statement
 {
     public required Expression Value;
 }
