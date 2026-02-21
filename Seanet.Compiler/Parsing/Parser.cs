@@ -193,8 +193,18 @@ public class Parser
 
     private TypeInfo ConsumeTypeOrIdentifier(string errorMessage)
     {
+        var isReference = false;
+        if (Match(TokenType.Ref))
+        {
+            isReference = true;
+        }
+
         if (Match(TokenType.Fun))
         {
+            if (isReference)
+            {
+                throw ReportErrorAndAbort("Invalid ref. The ref keyword cannot be applied on a function pointer type.");
+            }
             return ParseFunctionTypeInfo();
         }
 
@@ -202,12 +212,13 @@ public class Parser
 
         if (Match(TokenType.SquareStart))
         {
-            return ConsumeArrayType(typeToken);
+            return ConsumeArrayType(typeToken, isReference);
         }
 
         return new SingleTokenTypeInfo
         {
             Type = typeToken,
+            IsReference = isReference,
         };
     }
 
@@ -256,6 +267,7 @@ public class Parser
             var voidReturnType = new SingleTokenTypeInfo
             {
                 Type = voidToken,
+                IsReference = false,
             };
             return new FunctionTypeInfo
             {
@@ -358,6 +370,7 @@ public class Parser
             returnType = new SingleTokenTypeInfo
             {
                 Type = voidToken,
+                IsReference = false,
             };
         }
         else
@@ -390,25 +403,13 @@ public class Parser
 
     private VariableDeclarationStatement ParseFunctionParameter()
     {
-        var isReference = false;
-        if (Match(TokenType.Ref))
-        {
-            isReference = true;
-
-            if (Match(TokenType.Fun))
-            {
-                throw ReportErrorAndAbort("Invalid ref. Cannot apply the ref keyword to a function pointer type.");
-            }
-        }
         var type = ConsumeTypeOrIdentifier("Expected a function parameter type.");
-
         var identifier = Consume(TokenType.Identifier, "Expected a function parameter name.");
 
         return new VariableDeclarationStatement()
         {
             Type = type,
             Identifier = identifier,
-            IsReference = isReference,
         };
     }
 
@@ -445,12 +446,6 @@ public class Parser
         return MatchBuiltinVariableType() || Match(TokenType.Identifier);
     }
 
-    /// <summary>
-    /// Matches a type that can be associated with a variable and returns the type info
-    /// if there is a match.
-    ///
-    /// Handles builtin types like int and int[] and user defined types like
-    /// SomeType and SomeType[].
     private bool MatchVariableType(out TypeInfo typeInfo)
     {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -462,13 +457,14 @@ public class Parser
             var typeToken = Previous();
             if (Match(TokenType.SquareStart))
             {
-                typeInfo = ConsumeArrayType(typeToken);
+                typeInfo = ConsumeArrayType(typeToken, isReference: false);
             }
             else
             {
                 typeInfo = new SingleTokenTypeInfo()
                 {
                     Type = typeToken,
+                    IsReference = false,
                 };
             }
         }
@@ -479,7 +475,8 @@ public class Parser
             var typeToken = Previous();
             typeInfo = new SingleTokenTypeInfo()
             {
-                Type = typeToken
+                Type = typeToken,
+                IsReference = false,
             };
         }
 
@@ -489,22 +486,24 @@ public class Parser
             var typeToken = Peek();
             Advance(); // move past type
             Advance(); // move past opening [
-            typeInfo = ConsumeArrayType(typeToken);
+            typeInfo = ConsumeArrayType(typeToken, isReference: false);
         }
 
         return typeInfo != null;
     }
 
-    private ArrayTypeInfo ConsumeArrayType(Token itemTypeToken)
+    private ArrayTypeInfo ConsumeArrayType(Token itemTypeToken, bool isReference)
     {
         Consume(TokenType.SquareEnd, "Expected ] at the end of array type.");
         var itemType = new SingleTokenTypeInfo
         {
             Type = itemTypeToken,
+            IsReference = false,
         };
         var arrayType = new ArrayTypeInfo
         {
             ItemType = itemType,
+            IsReference = isReference,
         };
 
         // Handle multi-dimensional arrays by nesting array type infos.
@@ -515,6 +514,7 @@ public class Parser
             arrayType = new ArrayTypeInfo
             {
                 ItemType = arrayType,
+                IsReference = isReference,
             };
         }
 
@@ -577,6 +577,7 @@ public class Parser
         var typeInfo = new SingleTokenTypeInfo
         {
             Type = varToken,
+            IsReference = false,
         };
 
         return new VariableDeclarationWithAssignmentStatement()
@@ -1169,6 +1170,7 @@ public class Parser
         var typeInfo = new SingleTokenTypeInfo
         {
             Type = typeToken,
+            IsReference = false,
         };
         Consume(TokenType.ParenStart, "Expected ( at the beginning of struct constructor call.");
         // No arguments for now. Not sure if structs in this language will have parameterized constructors.
@@ -1187,6 +1189,7 @@ public class Parser
         var itemType = new SingleTokenTypeInfo
         {
             Type = typeToken,
+            IsReference = false,
         };
 
         TypeInfo typeInfo = itemType;
@@ -1199,6 +1202,7 @@ public class Parser
             typeInfo = new ArrayTypeInfo
             {
                 ItemType = typeInfo,
+                IsReference = false,
             };
 
             Consume(TokenType.SquareEnd, "Expected ] at the end of sized array type.");

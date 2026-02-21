@@ -28,7 +28,6 @@ public class VariableDeclarationStatement : Statement
 {
     public required TypeInfo Type { get; init; }
     public required Token Identifier { get; init; }
-    public bool IsReference { get; init; } = false;
 }
 
 public class VariableDeclarationWithAssignmentStatement : VariableDeclarationStatement

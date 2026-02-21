@@ -199,3 +199,36 @@ struct StructWithFunctionFields
     fun<int> someFunction2;
     fun<int, int> someFunction3;
 }
+
+struct StructWithMethods
+{
+    fun<ref StructWithMethods> someFunction1;
+    fun<ref StructWithMethods, int> someFunction2;
+}
+
+void Method1(ref StructWithMethods someStruct)
+{
+}
+
+int Method2(ref StructWithMethods someStruct)
+{
+    return 1337;
+}
+
+StructWithMethods MakeStructWithMethods()
+{
+    var obj = new StructWithMethod();
+    obj.someFunction1 = Method1;
+    obj.someFunction2 = Method2;
+}
+
+void UseStructWithMethods()
+{
+    var obj = MakeStructWithMethods();
+    obj.someFunction1();
+    int x = obj.someFunction2();
+}
+
+void FunctionskWithRefs(fun<ref int, ref double, ref bool[][]> structMethod)
+{
+}
