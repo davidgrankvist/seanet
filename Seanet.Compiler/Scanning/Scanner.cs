@@ -683,6 +683,9 @@ public class Scanner
             case "ref":
                 tokenType = TokenType.Ref;
                 break;
+            case "fun":
+                tokenType = TokenType.Fun;
+                break;
             default:
                 tokenType = TokenType.Eof; // dummy value
                 didMatch = false;

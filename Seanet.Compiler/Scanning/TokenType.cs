@@ -80,6 +80,7 @@ public enum TokenType
     New,
     Struct,
     Ref,
+    Fun,
     // Produced at the end of scanning
     Eof,
 }

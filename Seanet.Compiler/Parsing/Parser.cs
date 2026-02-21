@@ -1,4 +1,3 @@
-using System.CommandLine;
 using Seanet.Compiler.Errors;
 using Seanet.Compiler.Scanning;
 
@@ -194,6 +193,11 @@ public class Parser
 
     private TypeInfo ConsumeTypeOrIdentifier(string errorMessage)
     {
+        if (Match(TokenType.Fun))
+        {
+            return ParseFunctionTypeInfo();
+        }
+
         var typeToken = ConsumeBuiltinTypeOrIdentifier(errorMessage);
 
         if (Match(TokenType.SquareStart))
@@ -205,6 +209,60 @@ public class Parser
         {
             Type = typeToken,
         };
+    }
+
+    private FunctionTypeInfo ParseFunctionTypeInfo()
+    {
+        if (Match(TokenType.Less))
+        {
+            // Parse types like fun<int> or fun<int, string, double>. The last parameter is the return type.
+            TypeInfo? returnType = null;
+            var parameters = new List<TypeInfo>();
+            do
+            {
+                var parameterType = ConsumeTypeOrIdentifier("Expected a function type parameter.");
+                if (Check(TokenType.Comma))
+                {
+                    parameters.Add(parameterType);
+                }
+                else
+                {
+                    returnType = parameterType;
+                }
+            } while (Match(TokenType.Comma));
+
+            Consume(TokenType.Greater, "Expected > at the end of function pointer type parameters.");
+
+            return new FunctionTypeInfo
+            {
+                ReturnType = returnType!,
+                Parameters = parameters,
+            };
+        }
+        else
+        {
+            // Parse the fun type, which is a void with no params.
+            var funToken = Previous();
+            var voidToken = new Token
+            {
+                TokenType = TokenType.Void,
+                // Use a reference token for all of the other required fields.
+                Start = funToken.Start,
+                Length = funToken.Length,
+                Source = funToken.Source,
+                Line = funToken.Line,
+                Column = funToken.Column,
+            };
+            var voidReturnType = new SingleTokenTypeInfo
+            {
+                Type = voidToken,
+            };
+            return new FunctionTypeInfo
+            {
+                ReturnType = voidReturnType,
+                Parameters = [],
+            };
+        }
     }
 
     /// <summary>
@@ -332,19 +390,25 @@ public class Parser
 
     private VariableDeclarationStatement ParseFunctionParameter()
     {
-        var isRef = false;
+        var isReference = false;
         if (Match(TokenType.Ref))
         {
-            isRef = true;
+            isReference = true;
+
+            if (Match(TokenType.Fun))
+            {
+                throw ReportErrorAndAbort("Invalid ref. Cannot apply the ref keyword to a function pointer type.");
+            }
         }
         var type = ConsumeTypeOrIdentifier("Expected a function parameter type.");
+
         var identifier = Consume(TokenType.Identifier, "Expected a function parameter name.");
 
         return new VariableDeclarationStatement()
         {
             Type = type,
             Identifier = identifier,
-            IsReference = isRef,
+            IsReference = isReference,
         };
     }
 

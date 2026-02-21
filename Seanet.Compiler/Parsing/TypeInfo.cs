@@ -19,3 +19,9 @@ public class ArrayTypeInfo : TypeInfo
 {
     public required TypeInfo ItemType { get; init; }
 }
+
+public class FunctionTypeInfo : TypeInfo
+{
+    public required TypeInfo ReturnType { get; set; }
+    public required List<TypeInfo> Parameters { get; init; }
+}

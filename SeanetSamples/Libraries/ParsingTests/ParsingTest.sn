@@ -172,3 +172,30 @@ void PassStructAsRef()
     var hello = new HelloStruct();
     MutateStruct(ref hello);
 }
+
+void FunctionAsParameter(fun callback1, fun<int> callback2, fun<int, int> callback3)
+{
+    callback1();
+    int x = callback2();
+    int y = callback3(1337);
+}
+
+void FunctionAsParameterSimple(fun callback)
+{
+}
+
+void ToPassAsArg()
+{
+}
+
+void PassFunctionAsArg()
+{
+    FunctionAsParameter(ToPassAsArg);
+}
+
+struct StructWithFunctionFields
+{
+    fun someFunction1;
+    fun<int> someFunction2;
+    fun<int, int> someFunction3;
+}
