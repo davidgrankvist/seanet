@@ -671,6 +671,9 @@ public class Scanner
             case "var":
                 tokenType = TokenType.Var;
                 break;
+            case "new":
+                tokenType = TokenType.New;
+                break;
             default:
                 tokenType = TokenType.Eof; // dummy value
                 didMatch = false;

@@ -328,6 +328,11 @@ public class Parser
         return false;
     }
 
+    private bool MatchArrayItemType()
+    {
+        return MatchBuiltinVariableType() || Match(TokenType.Identifier);
+    }
+
     /// <summary>
     /// Matches a type that can be associated with a variable and returns the type info
     /// if there is a match.
@@ -1007,6 +1012,45 @@ public class Parser
         };
     }
 
+    private Expression ParseNewExpression()
+    {
+        // parse sized array expressions like int[5] or int[SomeFunction()]
+        if (MatchArrayItemType())
+        {
+            var typeToken = Previous();
+            var itemType = new SingleTokenTypeInfo
+            {
+                Type = typeToken,
+            };
+
+            TypeInfo typeInfo = itemType;
+            var arraySizes = new List<Expression>();
+            while (Match(TokenType.SquareStart))
+            {
+                var arraySize = ParseExpression();
+                arraySizes.Add(arraySize);
+
+                typeInfo = new ArrayTypeInfo
+                {
+                    ItemType = typeInfo,
+                };
+
+                Consume(TokenType.SquareEnd, "Expected ] at the end of sized array type.");
+            }
+
+            if (typeInfo is ArrayTypeInfo arrayType)
+            {
+                return new NewSizedArrayExpression
+                {
+                    Type = arrayType,
+                    Sizes = arraySizes,
+                };
+            }
+        }
+
+        throw ReportErrorAndAbort("Failed to parse new expression. Unknown constructor.");
+    }
+
     private Expression ParsePrimary()
     {
         if (MatchLiteral())
@@ -1046,6 +1090,11 @@ public class Parser
                     Identifier = identifier,
                 };
             }
+        }
+
+        if (Match(TokenType.New))
+        {
+            return ParseNewExpression();
         }
 
         throw ReportErrorAndAbort("Unexpected expression. Expected a literal, parenthesis grouping or identifier.");

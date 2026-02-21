@@ -80,3 +80,9 @@ public class ArrayAccessExpression : Expression
     public required Expression Array { get; init; }
     public required Expression Index { get; init; }
 }
+
+public class NewSizedArrayExpression : Expression
+{
+    public required ArrayTypeInfo Type { get; set; }
+    public required List<Expression> Sizes { get; init; }
+}

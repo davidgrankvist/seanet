@@ -76,6 +76,7 @@ public enum TokenType
     DoubleQuote,
     Var,
     Comment,
+    New,
     // Produced at the end of scanning
     Eof,
 }
