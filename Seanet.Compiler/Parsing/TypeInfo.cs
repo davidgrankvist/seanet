@@ -13,6 +13,7 @@ public abstract class TypeInfo
 public class SingleTokenTypeInfo : TypeInfo
 {
     public required Token Type { get; init; }
+
     public required bool IsReference { get; init; }
 }
 

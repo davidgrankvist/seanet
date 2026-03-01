@@ -600,7 +600,7 @@ public class Scanner
 
     private void ReportError(string message)
     {
-        errorReporter.ReportParseError(file, line, column, message);
+        errorReporter.ReportErrorAtLocation("Parse error", file, line, column, message);
     }
 
     private static bool TryParseKeyword(ReadOnlySpan<char> chars, out TokenType tokenType)

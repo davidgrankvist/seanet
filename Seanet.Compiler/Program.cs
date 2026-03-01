@@ -1,4 +1,5 @@
-﻿using Seanet.Compiler.CodeGeneration;
+﻿using Seanet.Compiler.Analysis;
+using Seanet.Compiler.CodeGeneration;
 using Seanet.Compiler.Errors;
 using Seanet.Compiler.Parsing;
 using Seanet.Compiler.Scanning;
@@ -62,6 +63,14 @@ class Program
         // Parsing
         var parser = new Parser(errorReporter);
         var syntaxTree = parser.Parse(cliResult.InputFilePath, tokens);
+        if (errorReporter.HasErrors())
+        {
+            return;
+        }
+
+        // Resolution
+        var resolver = new Resolver(errorReporter);
+        resolver.ResolveVariables(cliResult.InputFilePath, syntaxTree);
         if (errorReporter.HasErrors())
         {
             return;

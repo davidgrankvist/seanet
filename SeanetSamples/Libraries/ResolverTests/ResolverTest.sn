@@ -1,0 +1,33 @@
+int CallOtherFunction()
+{
+    return SimpleFunction();
+}
+
+int SimpleFunction()
+{
+    var x = 1337;
+    return x;
+}
+
+struct SomeStruct
+{
+    int Value;
+}
+
+void FunctionWithStructArg(SomeStruct s)
+{
+    var x = s;
+    return x;
+}
+
+void FunctionWithLoop(int count)
+{
+    int sum = 0;
+    for (int i = 0; i < count; i++)
+    {
+        var y = i + count;
+        sum += y;
+    }
+
+    return sum;
+}

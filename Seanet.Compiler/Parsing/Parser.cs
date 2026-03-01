@@ -289,7 +289,7 @@ public class Parser
 
     private void ReportError(string message, Token token)
     {
-        errorReporter.ReportParseError(file, token.Line, token.Column, message);
+        errorReporter.ReportErrorAtLocation("Parse error", file, token.Line, token.Column, message);
     }
 
     private ParsingAbortedException ReportErrorAndAbort(string message, Token? token = null)
@@ -842,8 +842,8 @@ public class Parser
             {
                 VariableExpression varExp => new AssignmentExpression()
                 {
-                    Identifier = varExp.Identifier,
-                    Expression = valueExpression,
+                    Variable = varExp,
+                    Value = valueExpression,
                 },
                 PropertyAccessExpression propAccessExp => new PropertyAssignmentExpression()
                 {
@@ -1249,7 +1249,11 @@ public class Parser
                 return new PostfixIncrementExpression()
                 {
                     Operator = operatorToken,
-                    Identifier = identifier,
+                    Variable = new VariableExpression()
+                    {
+                        Identifier = identifier,
+                        IsReference = false,
+                    }
                 };
             }
             else
